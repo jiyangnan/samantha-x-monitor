@@ -1,12 +1,12 @@
 #!/bin/bash
-# X Account Monitor - 自媒体运营自动化脚本 v3.0
-# 功能：只负责抓取账号内容，AI 分析和发布由 LLM 处理
+# X Account Monitor - 自媒体运营自动化脚本 v3.1
+# 功能：抓取 25 个 X 账号内容，AI 分析和发布由 LLM 处理
 
 SKILL_DIR="/Users/ferdinandji/.nvm/versions/node/v24.13.1/lib/node_modules/openclaw/skills/baoyu/skills"
 DATA_DIR="/Users/ferdinandji/.openclaw/workspace/x-monitor"
 LOG_FILE="$DATA_DIR/log.txt"
 
-# 关注列表
+# 25 个关注账号（必须全部抓取，不许偷懒）
 ACCOUNTS=(
   "Aries_warrior_f"
   "edwordkaru"
@@ -94,18 +94,20 @@ clear_queue() {
   > "$new_file"
 }
 
-# 主流程
+# 主流程：必须抓取全部 25 个账号
 main() {
-  log "========== 开始抓取 =========="
+  log "========== 开始抓取（必须全部 25 个）=========="
   
   clear_queue
   
+  local count=0
   for user in "${ACCOUNTS[@]}"; do
     fetch_account "$user"
     detect_and_save_new "$user"
+    ((count++))
   done
   
-  log "========== 抓取完成 =========="
+  log "========== 抓取完成: $count/25 =========="
   
   # 输出新内容列表
   local new_file="$DATA_DIR/new-queue.txt"
