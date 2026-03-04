@@ -21,7 +21,7 @@ X (Twitter) 自媒体运营自动化工具。
 
 ```bash
 # 配置 Cookie 后运行
-~/.openclaw/scripts/x-monitor.sh
+./x-monitor.sh
 ```
 
 ## 注意
