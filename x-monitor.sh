@@ -1,6 +1,6 @@
 #!/bin/bash
-# X Account Monitor - 自媒体运营自动化脚本
-# 功能：抓取关注账号 → 检测新推文 → 生成评论/原创 → 自动发布 → 推送有趣内容
+# X Account Monitor - 自媒体运营自动化脚本 v3.0
+# 功能：只负责抓取账号内容，AI 分析和发布由 LLM 处理
 
 SKILL_DIR="/Users/ferdinandji/.nvm/versions/node/v24.13.1/lib/node_modules/openclaw/skills/baoyu/skills"
 DATA_DIR="/Users/ferdinandji/.openclaw/workspace/x-monitor"
@@ -35,7 +35,6 @@ ACCOUNTS=(
   "canghe"
 )
 
-# 创建目录
 mkdir -p "$DATA_DIR"
 
 log() {
@@ -54,21 +53,22 @@ fetch_account() {
   
   if [ -f "$output" ]; then
     log "✅ @${user} 抓取成功"
-    echo "$output"
+    return 0
   else
     log "❌ @${user} 抓取失败"
-    echo ""
+    return 1
   fi
 }
 
-# 检测新推文（对比历史）
-detect_new_posts() {
+# 检测新推文并记录
+detect_and_save_new() {
   local user=$1
   local current_file="$DATA_DIR/${user}.md"
   local history_file="$DATA_DIR/${user}-history.md"
+  local new_file="$DATA_DIR/new-queue.txt"
   
   if [ ! -f "$history_file" ]; then
-    # 首次运行，保存历史
+    # 首次抓取，保存历史
     cp "$current_file" "$history_file"
     log "📝 @${user} 首次抓取，保存历史"
     return 1
@@ -79,59 +79,44 @@ detect_new_posts() {
     # 有新内容
     cp "$current_file" "$history_file"
     log "🆕 @${user} 发现新内容！"
+    
+    # 记录到新内容队列
+    echo "$user" >> "$new_file"
     return 0
-  else
-    return 1
-  fi
-}
-
-# 生成评论建议
-generate_comment_suggestion() {
-  local content=$1
-  
-  # 这里调用 LLM 生成评论（简化版）
-  echo "评论建议：这是一个很有意思的观点！让我补充一些思考..."
-}
-
-# 生成原创推文
-generate_original_tweet() {
-  local content=$1
-  
-  # 这里需要调用 LLM 生成原创内容
-  # 暂时返回空，稍后实现
-  echo ""
-}
-
-# 发布推文
-post_to_x() {
-  local text=$1
-  
-  if [ -z "$text" ]; then
-    return 1
   fi
   
-  log "📤 发布推文: ${text:0:50}..."
-  
-  cd "$SKILL_DIR/baoyu-post-to-x"
-  npx -y bun scripts/x-browser.ts "$text" --submit > /dev/null 2>&1
-  
-  log "✅ 发布成功"
+  return 1
+}
+
+# 清空新内容队列
+clear_queue() {
+  local new_file="$DATA_DIR/new-queue.txt"
+  > "$new_file"
 }
 
 # 主流程
 main() {
-  log "========== 开始监控 =========="
+  log "========== 开始抓取 =========="
+  
+  clear_queue
   
   for user in "${ACCOUNTS[@]}"; do
     fetch_account "$user"
-    detect_new_posts "$user" && {
-      # 发现新内容，可以生成评论或原创
-      log "处理 @${user} 的新内容..."
-    }
+    detect_and_save_new "$user"
   done
   
-  log "========== 监控完成 =========="
+  log "========== 抓取完成 =========="
+  
+  # 输出新内容列表
+  local new_file="$DATA_DIR/new-queue.txt"
+  if [ -s "$new_file" ]; then
+    log "📋 发现新内容的账号："
+    cat "$new_file" | while read user; do
+      log "  - @${user}"
+    done
+  else
+    log "📋 没有发现新内容"
+  fi
 }
 
-# 运行
 main
