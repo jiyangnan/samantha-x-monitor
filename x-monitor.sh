@@ -2,7 +2,11 @@
 # X Account Monitor - 自媒体运营自动化脚本
 # 调用 twikit 抓取账号推文
 
-DATA_DIR="/Users/ferdinandji/.openclaw/workspace/x-monitor"
+# 获取脚本所在目录
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# 使用相对于脚本的路径
+DATA_DIR="${SCRIPT_DIR}/../x-monitor"
 VENV_DIR="$DATA_DIR/.venv"
 LOG_FILE="$DATA_DIR/log.txt"
 
